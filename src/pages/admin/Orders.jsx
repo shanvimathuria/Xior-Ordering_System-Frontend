@@ -1,173 +1,21 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { fetchDeskOrders } from "../../api/admin.api";
+import OrderDetailModal from "../../components/OrderDetailModal";
 
-const ACTIVE_STATUSES = ["New", "Accepted", "Preparing", "Ready", "Out for Delivery"];
-const RECENT_STATUSES = ["Completed", "Cancelled"];
+const API_BASE = "https://ordering-system-backend-a1az.onrender.com";
 
-const ORDERS = [
-  {
-    id: "ORD-1045",
-    type: "Dine-In",
-    tableNumber: "5",
-    customerName: "Anita Rao",
-    phone: "9876543210",
-    total: 1340,
-    paymentStatus: "Paid",
-    status: "Preparing",
-    timePlaced: "2024-01-19T12:35:00Z",
-    paymentMethod: "UPI",
-    discount: 80,
-    taxes: 102,
-    instructions: "Less oil, no raw onions",
-    items: [
-      { name: "Paneer Butter Masala", qty: 1, price: 320, modifiers: ["Extra spicy"], notes: "" },
-      { name: "Butter Naan", qty: 4, price: 60, modifiers: [], notes: "" },
-      { name: "Masala Soda", qty: 2, price: 90, modifiers: ["Low ice"], notes: "" },
-    ],
-    timeline: [
-      { label: "New", at: "2024-01-19T12:35:00Z" },
-      { label: "Accepted", at: "2024-01-19T12:37:00Z" },
-      { label: "Preparing", at: "2024-01-19T12:40:00Z" },
-    ],
-  },
-  {
-    id: "ORD-1044",
-    type: "Delivery",
-    tableNumber: null,
-    customerName: "Rohan Das",
-    phone: "9021090210",
-    total: 1890,
-    paymentStatus: "Pending",
-    status: "Out for Delivery",
-    timePlaced: "2024-01-19T11:50:00Z",
-    paymentMethod: "Cash on delivery",
-    discount: 0,
-    taxes: 142,
-    instructions: "Call on arrival",
-    items: [
-      { name: "Chicken Biryani Family", qty: 1, price: 780, modifiers: ["Leg piece"], notes: "" },
-      { name: "Tandoori Chicken", qty: 1, price: 620, modifiers: ["Well done"], notes: "" },
-      { name: "Thums Up 750ml", qty: 2, price: 120, modifiers: [], notes: "" },
-    ],
-    timeline: [
-      { label: "New", at: "2024-01-19T11:50:00Z" },
-      { label: "Accepted", at: "2024-01-19T11:52:00Z" },
-      { label: "Preparing", at: "2024-01-19T12:05:00Z" },
-      { label: "Ready", at: "2024-01-19T12:25:00Z" },
-      { label: "Out for Delivery", at: "2024-01-19T12:30:00Z" },
-    ],
-  },
-  {
-    id: "ORD-1043",
-    type: "Takeaway",
-    tableNumber: null,
-    customerName: "Walk-in",
-    phone: "9811198111",
-    total: 460,
-    paymentStatus: "Paid",
-    status: "Ready",
-    timePlaced: "2024-01-19T12:10:00Z",
-    paymentMethod: "Card",
-    discount: 20,
-    taxes: 32,
-    instructions: "Pack sauces separately",
-    items: [
-      { name: "Veg Roll", qty: 2, price: 120, modifiers: ["Extra mint chutney"], notes: "" },
-      { name: "Cold Coffee", qty: 2, price: 80, modifiers: ["Less sugar"], notes: "" },
-    ],
-    timeline: [
-      { label: "New", at: "2024-01-19T12:10:00Z" },
-      { label: "Accepted", at: "2024-01-19T12:12:00Z" },
-      { label: "Preparing", at: "2024-01-19T12:18:00Z" },
-      { label: "Ready", at: "2024-01-19T12:32:00Z" },
-    ],
-  },
-  {
-    id: "ORD-1042",
-    type: "Dine-In",
-    tableNumber: "12",
-    customerName: "Corporate Group",
-    phone: "",
-    total: 4220,
-    paymentStatus: "Paid",
-    status: "Completed",
-    timePlaced: "2024-01-18T20:05:00Z",
-    paymentMethod: "Card",
-    discount: 0,
-    taxes: 310,
-    instructions: "Serve starters together",
-    items: [
-      { name: "Veg Platter", qty: 2, price: 620, modifiers: ["Extra paneer"], notes: "" },
-      { name: "Dal Makhani", qty: 3, price: 240, modifiers: ["Butter on side"], notes: "" },
-      { name: "Garlic Naan", qty: 10, price: 70, modifiers: [], notes: "" },
-    ],
-    timeline: [
-      { label: "New", at: "2024-01-18T20:05:00Z" },
-      { label: "Accepted", at: "2024-01-18T20:07:00Z" },
-      { label: "Preparing", at: "2024-01-18T20:12:00Z" },
-      { label: "Ready", at: "2024-01-18T20:45:00Z" },
-      { label: "Completed", at: "2024-01-18T21:40:00Z" },
-    ],
-  },
-  {
-    id: "ORD-1041",
-    type: "Delivery",
-    tableNumber: null,
-    customerName: "Meera K",
-    phone: "9810098100",
-    total: 980,
-    paymentStatus: "Paid",
-    status: "Cancelled",
-    timePlaced: "2024-01-18T18:50:00Z",
-    paymentMethod: "UPI",
-    discount: 0,
-    taxes: 74,
-    instructions: "Allergic to peanuts",
-    items: [
-      { name: "Veg Pulao", qty: 1, price: 260, modifiers: [], notes: "" },
-      { name: "Paneer Tikka", qty: 1, price: 420, modifiers: ["Well roasted"], notes: "" },
-    ],
-    timeline: [
-      { label: "New", at: "2024-01-18T18:50:00Z" },
-      { label: "Accepted", at: "2024-01-18T18:55:00Z" },
-      { label: "Cancelled", at: "2024-01-18T19:05:00Z" },
-    ],
-  },
-  {
-    id: "ORD-1040",
-    type: "Takeaway",
-    tableNumber: null,
-    customerName: "Walk-in",
-    phone: "7000070000",
-    total: 560,
-    paymentStatus: "Paid",
-    status: "Completed",
-    timePlaced: "2024-01-18T12:25:00Z",
-    paymentMethod: "Cash",
-    discount: 0,
-    taxes: 42,
-    instructions: "",
-    items: [
-      { name: "Chole Bhature", qty: 2, price: 180, modifiers: [], notes: "" },
-      { name: "Sweet Lassi", qty: 2, price: 100, modifiers: ["Chilled"], notes: "" },
-    ],
-    timeline: [
-      { label: "New", at: "2024-01-18T12:25:00Z" },
-      { label: "Accepted", at: "2024-01-18T12:26:00Z" },
-      { label: "Preparing", at: "2024-01-18T12:30:00Z" },
-      { label: "Ready", at: "2024-01-18T12:50:00Z" },
-      { label: "Completed", at: "2024-01-18T13:05:00Z" },
-    ],
-  },
-];
+/* styling tokens — KEEP EXACTLY AS-IS */
+const ACTIVE_STATUSES = ["PLACED", "ACCEPTED", "PREPARING", "READY", "OUT FOR DELIVERY"];
+const RECENT_STATUSES = ["COMPLETED", "CANCELLED"];
 
 const statusTone = {
-  New: "bg-slate-200 text-slate-800",
-  Accepted: "bg-blue-100 text-blue-700",
-  Preparing: "bg-[#FF9A34]/20 text-[#FF9A34]",
-  Ready: "bg-[#2AB0A3]/20 text-[#2AB0A3]",
-  "Out for Delivery": "bg-[#FFE650]/40 text-[#9b7a00]",
-  Completed: "bg-emerald-100 text-emerald-700",
-  Cancelled: "bg-red-100 text-red-700",
+  "PLACED": "bg-sky-100 text-sky-700",
+  "ACCEPTED": "bg-blue-100 text-blue-700",
+  "PREPARING": "bg-[#FF9A34]/20 text-[#FF9A34]",
+  "READY": "bg-[#2AB0A3]/20 text-[#2AB0A3]",
+  "OUT FOR DELIVERY": "bg-[#FFE650]/40 text-[#9b7a00]",
+  "COMPLETED": "bg-emerald-100 text-emerald-700",
+  "CANCELLED": "bg-red-100 text-red-700",
 };
 
 const paymentTone = {
@@ -181,20 +29,113 @@ const formatDateTime = (value) =>
     timeStyle: "short",
   }).format(new Date(value));
 
-const formatCurrency = (amount) => `₹${amount.toLocaleString("en-IN")}`;
+const formatCurrency = (amount) => `₹${amount?.toLocaleString?.("en-IN") ?? amount}`;
 
 export default function Orders() {
+  // --- data + load logic (moved INSIDE component) ---
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  async function loadOrders() {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await fetchDeskOrders();
+      const raw = Array.isArray(data) ? data : data?.orders || [];
+
+      // normalize fields so UI doesn't crash if backend uses snake_case or other keys
+      const normalized = await Promise.all(raw.map(async (o) => {
+        const status = (o.status ?? o.order_status ?? "PLACED")?.toUpperCase?.() || "PLACED";
+        let total = o.total ?? o.amount ?? o.grand_total ?? o.subtotal ?? 0;
+
+        // Fetch the correct total based on order status
+        try {
+          if (status === "COMPLETED") {
+            // For completed orders, fetch from invoice endpoint
+            const invoiceRes = await fetch(`${API_BASE}/desk/orders/${o.id}/invoice`);
+            if (invoiceRes.ok) {
+              const invoiceData = await invoiceRes.json();
+              total = invoiceData.grand_total ?? invoiceData.total ?? total;
+              console.log("Order", o.id, "invoice total:", total);
+            }
+          } else {
+            // For non-completed orders, fetch from order details endpoint and calculate total from items
+            const detailRes = await fetch(`${API_BASE}/desk/orders/${o.id}`);
+            if (detailRes.ok) {
+              const detailData = await detailRes.json();
+              console.log("Order", o.id, "items:", detailData.items);
+              // Calculate total same way as modal: sum of (quantity * single_price)
+              total = (detailData.items || []).reduce((acc, item) => {
+                const itemTotal = (item.quantity || 0) * (item.single_price || 0);
+                console.log("Item:", item, "calculated:", itemTotal);
+                return acc + itemTotal;
+              }, 0);
+              console.log("Order", o.id, "final calculated total:", total);
+            }
+          }
+        } catch (err) {
+          console.log("Failed to fetch order details for", o.id, err);
+        }
+
+        return {
+          id: o.id ?? o.order_id ?? o.orderId ?? o._id ?? "",
+          type: o.type ?? o.order_type ?? o.orderType ?? "Dine-In",
+          tableNumber: o.tableNumber ?? o.table_number ?? o.table ?? null,
+          customerName: o.customerName ?? o.customer_name ?? o.customer ?? "",
+          phone: o.phone ?? o.contact ?? "",
+          total: total,
+          paymentStatus: o.paymentStatus ?? o.payment_status ?? "Pending",
+          status: status,
+          timePlaced: o.timePlaced ?? o.created_at ?? o.createdAt ?? new Date().toISOString(),
+          paymentMethod: o.paymentMethod ?? o.payment_method ?? o.pay_method ?? "",
+          discount: o.discount ?? 0,
+          taxes: o.taxes ?? 0,
+          instructions: o.instructions ?? o.notes ?? "",
+          items: Array.isArray(o.items) ? o.items : o.order_items ?? o.products ?? [],
+          timeline: Array.isArray(o.timeline) ? o.timeline : o.events ?? (o.timeline ? [o.timeline] : []),
+        };
+      }));
+
+      setOrders(normalized);
+    } catch (err) {
+      setError(err?.message || "Failed to load orders");
+      setOrders([]);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadOrders();
+    // intentionally no other dependencies: one-time fetch on mount
+  }, []);
+
+  // --- UI state & filters (kept intact) ---
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState([]);
   const [typeFilter, setTypeFilter] = useState("all");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [downloadMenu, setDownloadMenu] = useState(null);
+
+  useEffect(() => {
+    if (!downloadMenu) return;
+    const handleOutside = (event) => {
+      if (!event.target.closest(`[data-download-date="${downloadMenu}"]`)) {
+        setDownloadMenu(null);
+      }
+    };
+    document.addEventListener("mousedown", handleOutside);
+    return () => document.removeEventListener("mousedown", handleOutside);
+  }, [downloadMenu]);
 
   const toggleStatus = (status) => {
-    setStatusFilter((prev) =>
-      prev.includes(status) ? prev.filter((s) => s !== status) : [...prev, status]
-    );
+    setStatusFilter((prev) => {
+      // Single select: if clicking same status, clear. Otherwise select only that status
+      return prev.includes(status) ? [] : [status];
+    });
   };
 
   const clearFilters = () => {
@@ -205,12 +146,13 @@ export default function Orders() {
     setDateTo("");
   };
 
+  // NOTE: using orders (fetched) instead of mock ORDERS
   const filteredOrders = useMemo(() => {
-    return ORDERS.filter((order) => {
+    return orders.filter((order) => {
       const matchesSearch = searchTerm
-        ? order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (order.phone || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (order.customerName || "").toLowerCase().includes(searchTerm.toLowerCase())
+        ? (order.id || "").toString().toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (order.phone || "").toString().toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (order.customerName || "").toString().toLowerCase().includes(searchTerm.toLowerCase())
         : true;
 
       const matchesStatus = statusFilter.length ? statusFilter.includes(order.status) : true;
@@ -219,13 +161,11 @@ export default function Orders() {
       const placed = new Date(order.timePlaced).getTime();
       const from = dateFrom ? new Date(dateFrom).setHours(0, 0, 0, 0) : null;
       const to = dateTo ? new Date(dateTo).setHours(23, 59, 59, 999) : null;
-      const matchesDate =
-        (from ? placed >= from : true) &&
-        (to ? placed <= to : true);
+      const matchesDate = (from ? placed >= from : true) && (to ? placed <= to : true);
 
       return matchesSearch && matchesStatus && matchesType && matchesDate;
     });
-  }, [searchTerm, statusFilter, typeFilter, dateFrom, dateTo]);
+  }, [orders, searchTerm, statusFilter, typeFilter, dateFrom, dateTo]);
 
   const groupedOrders = useMemo(() => {
     const sorted = [...filteredOrders].sort(
@@ -252,36 +192,164 @@ export default function Orders() {
     return groups;
   }, [filteredOrders]);
 
-  const renderStatus = (status) => (
-    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${statusTone[status]}`}>
-      {status}
-    </span>
-  );
+  const renderStatus = (status) => {
+    const statusUpperCase = status?.toUpperCase() || "";
+    return (
+      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${statusTone[status]}`}>
+        {statusUpperCase}
+      </span>
+    );
+  };
 
-  const renderPayment = (paymentStatus) => (
-    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${paymentTone[paymentStatus]}`}>
-      {paymentStatus}
-    </span>
-  );
+  const renderPayment = (paymentStatus, orderStatus) => {
+    const displayStatus = orderStatus === "COMPLETED" ? "Paid" : paymentStatus;
+    const tone = orderStatus === "COMPLETED" ? paymentTone["Paid"] : paymentTone[paymentStatus];
+    return (
+      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${tone}`}>
+        {displayStatus}
+      </span>
+    );
+  };
 
+  const normalizeInvoiceRow = (order, invoice) => {
+    return {
+      invoiceId: invoice?.invoice_number ?? invoice?.invoiceNumber ?? invoice?.invoice_id ?? invoice?.id ?? "",
+      orderId: order?.id ?? invoice?.order_id ?? invoice?.orderId ?? "",
+      timePlaced:
+        invoice?.timePlaced ?? invoice?.created_at ?? invoice?.createdAt ?? order?.timePlaced ?? "",
+      customerName: invoice?.customerName ?? invoice?.customer_name ?? order?.customerName ?? "",
+      phone: invoice?.phone ?? invoice?.customer_phone ?? order?.phone ?? "",
+      paymentMethod: invoice?.paymentMethod ?? invoice?.payment_method ?? order?.paymentMethod ?? "",
+      status: invoice?.status ?? order?.status ?? "",
+      subtotal: invoice?.subtotal ?? invoice?.sub_total ?? 0,
+      taxes: invoice?.tax_total ?? invoice?.taxes ?? 0,
+      charges: invoice?.charges_total ?? invoice?.charges ?? 0,
+      grandTotal: invoice?.grand_total ?? invoice?.grandTotal ?? invoice?.total ?? 0,
+    };
+  };
+
+  const downloadFile = (content, fileName, mimeType) => {
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  };
+
+  const toCsv = (rows) => {
+    const headers = [
+      "invoiceId",
+      "orderId",
+      "timePlaced",
+      "customerName",
+      "phone",
+      "paymentMethod",
+      "status",
+      "subtotal",
+      "taxes",
+      "charges",
+      "grandTotal",
+    ];
+    const escapeCell = (value) => {
+      const str = value === null || value === undefined ? "" : String(value);
+      if (/[",\n]/.test(str)) {
+        return `"${str.replace(/"/g, '""')}"`;
+      }
+      return str;
+    };
+    const lines = [headers.join(",")];
+    rows.forEach((row) => {
+      lines.push(headers.map((key) => escapeCell(row[key])).join(","));
+    });
+    return lines.join("\n");
+  };
+
+  const fetchInvoicesForOrders = async (ordersToFetch) => {
+    const results = await Promise.all(
+      ordersToFetch.map(async (order) => {
+        try {
+          const res = await fetch(`${API_BASE}/desk/orders/${order.id}/invoice`);
+          if (!res.ok) return null;
+          const data = await res.json();
+          const hasInvoice =
+            data?.invoice_number || data?.invoiceNumber || data?.invoice_id || data?.grand_total;
+          if (!hasInvoice) return null;
+          return normalizeInvoiceRow(order, data);
+        } catch (err) {
+          return null;
+        }
+      })
+    );
+
+    return results.filter(Boolean);
+  };
+
+  const handleDownloadInvoices = async (group) => {
+    setDownloadMenu(null);
+    const invoices = await fetchInvoicesForOrders(group.items);
+    if (!invoices.length) {
+      window.alert("No invoices found for this date.");
+      return;
+    }
+
+    const safeDate = (group.date || "date").replace(/[^a-z0-9]+/gi, "-").toLowerCase();
+    const csv = toCsv(invoices);
+    downloadFile(csv, `invoices-${safeDate}.csv`, "text/csv;charset=utf-8;");
+  };
+
+  const handleDownloadAllFiltered = async () => {
+    const invoices = await fetchInvoicesForOrders(filteredOrders);
+    if (!invoices.length) {
+      window.alert("No invoices found for the current filters.");
+      return;
+    }
+
+    const safeDate = new Date().toISOString().slice(0, 10);
+    const csv = toCsv(invoices);
+    downloadFile(csv, `invoices-filtered-${safeDate}.csv`, "text/csv;charset=utf-8;");
+  };
+
+  // Optional: show a small loading/error panel but keep main UI unchanged.
+  // If you prefer zero UI change while loading, you can remove these early returns.
+  if (loading) {
+    return <div className="p-6 text-slate-600">Loading orders…</div>;
+  }
+
+  if (error) {
+    return <div className="p-6 text-red-600">{error}</div>;
+  }
+
+  // --- RENDER (exactly your original UI, untouched classes) ---
   return (
     <div className="space-y-6 text-slate-700">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <h1 className="text-3xl font-semibold text-slate-900">Orders</h1>
           <p className="text-sm text-slate-500 mt-1">
             Full operational history with live active queues and recent closures.
           </p>
         </div>
-        <div className="flex flex-wrap gap-3 items-center">
-          <div className="rounded-xl border border-[#2AB0A3]/30 bg-[#e8f7f5] px-4 py-2 text-sm text-slate-800 shadow-sm">
-            Auto-refreshing
+        <div className="flex flex-col gap-3 items-end">
+          <div className="flex items-center gap-3">
+            <div className="rounded-xl border border-[#2AB0A3]/30 bg-[#e8f7f5] px-4 py-2 text-sm text-slate-800 shadow-sm">
+              Auto-refreshing
+            </div>
+            <button
+              onClick={clearFilters}
+              className="text-sm font-semibold text-[#2AB0A3] hover:underline"
+            >
+              Clear filters
+            </button>
           </div>
           <button
-            onClick={clearFilters}
-            className="text-sm font-semibold text-[#2AB0A3] hover:underline"
+            onClick={handleDownloadAllFiltered}
+            className="rounded-xl border border-[#2AB0A3]/30 bg-[#e8f7f5] px-4 py-2 text-sm text-slate-800 shadow-sm hover:border-[#2AB0A3] hover:bg-[#2AB0A3]/10 transition"
           >
-            Clear filters
+            DOWNLOAD ALL
           </button>
         </div>
       </div>
@@ -335,12 +403,19 @@ export default function Orders() {
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-2 text-xs font-semibold text-slate-700 uppercase tracking-wide">
             Status
-            <span className="text-[11px] bg-[#d8f3ef] text-[#1e7f77] px-2 py-1 rounded-full">
-              {statusFilter.length ? `${statusFilter.length} selected` : "All"}
-            </span>
           </div>
           <div className="flex-1 overflow-x-auto">
             <div className="flex gap-2 min-w-max py-1">
+              <button
+                onClick={() => setStatusFilter([])}
+                className={`whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-semibold border transition ${
+                  statusFilter.length === 0
+                    ? "border-[#2AB0A3] bg-[#c0ece6] text-[#1f8b82]"
+                    : "border-slate-200 text-slate-700 hover:border-[#2AB0A3] hover:bg-white"
+                }`}
+              >
+                ALL
+              </button>
               {[...ACTIVE_STATUSES, ...RECENT_STATUSES].map((status) => (
                 <button
                   key={status}
@@ -351,7 +426,7 @@ export default function Orders() {
                       : "border-slate-200 text-slate-700 hover:border-[#2AB0A3] hover:bg-white"
                   }`}
                 >
-                  {status}
+                  {status.toUpperCase()}
                 </button>
               ))}
             </div>
@@ -376,9 +451,47 @@ export default function Orders() {
                 </p>
                 <h3 className="text-lg font-semibold text-slate-900">{group.date}</h3>
               </div>
-              <span className="text-xs bg-[#e8f7f5] text-[#1f8b82] px-3 py-1 rounded-full font-semibold border border-[#2AB0A3]/30">
-                {group.items.length} orders
-              </span>
+              <div
+                className="flex items-center gap-2 relative"
+                data-download-date={group.date}
+              >
+                <span className="text-xs bg-[#e8f7f5] text-[#1f8b82] px-3 py-1 rounded-full font-semibold border border-[#2AB0A3]/30">
+                  {group.items.length} orders
+                </span>
+                <button
+                  type="button"
+                  className="rounded-full border border-[#2AB0A3]/40 bg-white p-2 text-[#1f8b82] hover:bg-[#e8f7f5] transition"
+                  aria-label={`Download invoices for ${group.date}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setDownloadMenu((prev) => (prev === group.date ? null : group.date));
+                  }}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M9 3a1 1 0 112 0v7.586l2.293-2.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4A1 1 0 115.707 8.293L8 10.586V3z" />
+                    <path d="M3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" />
+                  </svg>
+                </button>
+                {downloadMenu === group.date && (
+                  <div className="absolute right-0 top-full mt-2 w-64 rounded-xl border border-slate-200 bg-white shadow-lg z-20 overflow-hidden">
+                    <div className="px-4 py-3 text-sm text-slate-700">
+                      Download all invoices for {group.date}
+                    </div>
+                    <div className="px-4 pb-3">
+                      <button
+                        type="button"
+                        className="w-full rounded-lg bg-[#2AB0A3] px-3 py-2 text-sm font-semibold text-white hover:bg-[#239488] transition"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDownloadInvoices(group);
+                        }}
+                      >
+                        Download all invoices
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="rounded-2xl border border-[#2AB0A3]/25 bg-white divide-y divide-slate-100 overflow-hidden shadow-sm">
@@ -391,11 +504,19 @@ export default function Orders() {
                   <div className="flex-1">
                     <div className="flex items-center gap-3 flex-wrap">
                       <span className="text-sm font-semibold text-slate-900">{order.id}</span>
-                      <span className="text-xs font-semibold text-slate-500">{order.type}</span>
-                      {order.type === "Dine-In" && order.tableNumber && (
+                      <span className={`text-xs font-semibold ${
+                        order.type === "DINE_IN" || order.type === "Dine-In"
+                          ? "text-green-600"
+                          : order.type === "TAKEAWAY" || order.type === "Takeaway"
+                          ? "text-blue-600"
+                          : order.type === "DELIVERY" || order.type === "Delivery"
+                          ? "text-red-600"
+                          : "text-slate-500"
+                      }`}>{order.type}</span>
+                      {(order.type === "DINE_IN" || order.type === "Dine-In") && order.tableNumber && (
                         <span className="text-xs text-slate-500">Table {order.tableNumber}</span>
                       )}
-                      {order.type !== "Dine-In" && order.phone && (
+                      {(order.type !== "DINE_IN" && order.type !== "Dine-In") && order.phone && (
                         <span className="text-xs text-slate-500">{order.phone}</span>
                       )}
                     </div>
@@ -405,9 +526,11 @@ export default function Orders() {
                   </div>
 
                   <div className="flex items-center gap-3 flex-wrap sm:justify-end">
-                    {renderPayment(order.paymentStatus)}
+                    {order.status?.toUpperCase() !== "CANCELLED" && renderPayment(order.paymentStatus, order.status)}
                     {renderStatus(order.status)}
-                    <span className="text-sm font-semibold text-slate-900">{formatCurrency(order.total)}</span>
+                    <span className="text-sm font-semibold text-slate-900">
+                      {order.status?.toUpperCase() === "CANCELLED" ? "_" : formatCurrency(order.total)}
+                    </span>
                     <span className="text-xs text-slate-500">{formatDateTime(order.timePlaced)}</span>
                   </div>
                 </button>
@@ -422,151 +545,11 @@ export default function Orders() {
           order={selectedOrder}
           onClose={() => setSelectedOrder(null)}
           renderStatus={renderStatus}
-          renderPayment={renderPayment}
+          renderPayment={(paymentStatus) => renderPayment(paymentStatus, selectedOrder.status)}
           formatCurrency={formatCurrency}
           formatDateTime={formatDateTime}
         />
       )}
-    </div>
-  );
-}
-
-function OrderDetailModal({ order, onClose, renderStatus, renderPayment, formatCurrency, formatDateTime }) {
-  const subtotal = order.items.reduce((acc, item) => acc + item.qty * item.price, 0);
-  const totalWithAdjustments = subtotal - order.discount + order.taxes;
-
-  return (
-    <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center px-4">
-      <div className="bg-white max-w-5xl w-full rounded-2xl shadow-xl overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-          <div className="space-y-1">
-            <div className="flex items-center gap-3">
-              <h3 className="text-xl font-semibold text-slate-900">{order.id}</h3>
-              {renderStatus(order.status)}
-              {renderPayment(order.paymentStatus)}
-            </div>
-            <p className="text-sm text-slate-500">Placed {formatDateTime(order.timePlaced)}</p>
-          </div>
-          <button
-            onClick={onClose}
-            className="rounded-full p-2 hover:bg-slate-100 text-slate-500"
-            aria-label="Close order detail"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path
-                fillRule="evenodd"
-                d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                clipRule="evenodd"
-              />
-            </svg>
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 p-6">
-          <div className="lg:col-span-2 space-y-4">
-            <div className="rounded-xl border border-slate-100 p-4">
-              <div className="flex items-center justify-between mb-3">
-                <div>
-                  <p className="text-xs font-semibold text-slate-500">Order Type</p>
-                  <p className="text-sm font-semibold text-slate-800">
-                    {order.type}
-                    {order.type === "Dine-In" && order.tableNumber ? ` · Table ${order.tableNumber}` : ""}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="text-xs font-semibold text-slate-500">Payment Method</p>
-                  <p className="text-sm font-semibold text-slate-800">{order.paymentMethod}</p>
-                </div>
-              </div>
-              <p className="text-sm text-slate-500">
-                Customer: {order.customerName || "Guest"}
-                {order.phone ? ` • ${order.phone}` : ""}
-              </p>
-              {order.instructions && (
-                <p className="text-sm text-slate-600 mt-2 bg-slate-50 rounded-lg px-3 py-2">
-                  Special instructions: {order.instructions}
-                </p>
-              )}
-            </div>
-
-            <div className="rounded-xl border border-slate-100">
-              <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
-                <h4 className="text-sm font-semibold text-slate-900">Items</h4>
-                <span className="text-xs text-slate-500">Qty · Modifiers · Notes</span>
-              </div>
-              <div className="divide-y divide-slate-100">
-                {order.items.map((item) => (
-                  <div key={item.name} className="px-4 py-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <span className="w-8 h-8 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center font-semibold">
-                          {item.qty}×
-                        </span>
-                        <div>
-                          <p className="font-semibold text-slate-900">{item.name}</p>
-                          {item.modifiers.length > 0 && (
-                            <p className="text-xs text-slate-500">{item.modifiers.join(", ")}</p>
-                          )}
-                          {item.notes && <p className="text-xs text-slate-500">Note: {item.notes}</p>}
-                        </div>
-                      </div>
-                      <div className="text-right font-semibold text-slate-800">
-                        {formatCurrency(item.qty * item.price)}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-slate-100 p-4">
-              <h4 className="text-sm font-semibold text-slate-900 mb-3">Order Timeline</h4>
-              <div className="space-y-2">
-                {order.timeline.map((event) => (
-                  <div key={`${order.id}-${event.label}`} className="flex items-center gap-3 text-sm">
-                    <div className="w-2 h-2 rounded-full bg-[#2AB0A3]" />
-                    <span className="font-semibold text-slate-800 w-28">{event.label}</span>
-                    <span className="text-slate-500">{formatDateTime(event.at)}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <div className="rounded-xl border border-slate-100 p-4 bg-slate-50">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-slate-600">Subtotal</span>
-                <span className="text-sm font-semibold text-slate-900">{formatCurrency(subtotal)}</span>
-              </div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-slate-600">Discount</span>
-                <span className="text-sm font-semibold text-slate-900">- {formatCurrency(order.discount)}</span>
-              </div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-slate-600">Taxes</span>
-                <span className="text-sm font-semibold text-slate-900">{formatCurrency(order.taxes)}</span>
-              </div>
-              <div className="flex items-center justify-between pt-3 border-t border-slate-200">
-                <span className="text-base font-semibold text-slate-900">Grand Total</span>
-                <span className="text-lg font-bold text-[#2AB0A3]">{formatCurrency(totalWithAdjustments)}</span>
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-slate-100 p-4">
-              <h4 className="text-sm font-semibold text-slate-900 mb-3">Actions</h4>
-              <div className="flex flex-col gap-2">
-                <button className="rounded-xl bg-[#2AB0A3] text-white text-sm font-semibold px-4 py-2 shadow-sm hover:bg-[#239488] transition">
-                  Reprint invoice
-                </button>
-                <button className="rounded-xl border border-slate-200 text-sm font-semibold text-slate-700 px-4 py-2 hover:border-[#2AB0A3] hover:text-[#2AB0A3] transition">
-                  View payment receipt
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }

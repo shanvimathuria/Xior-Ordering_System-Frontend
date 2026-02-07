@@ -25,8 +25,10 @@ import AdminLogin from "./pages/admin/Login";
 import AdminDashboard from "./pages/admin/Dashboard";
 import AdminMenu from "./pages/admin/Menu";
 import AdminOrders from "./pages/admin/Orders";
-import AdminInvoices from "./pages/admin/Invoices";
 import AdminReports from "./pages/admin/Reports";
+import AdminTables from "./pages/admin/Tables";
+import AdminTaxesCharges from "./pages/admin/TaxesCharges";
+import AdminInvoiceSettings from "./pages/admin/InvoiceSettings";
 
 /* Desk */
 import DeskLogin from "./pages/desk/Login";
@@ -64,7 +66,9 @@ export default function App() {
         <Route path="dashboard" element={<AdminDashboard />} />
         <Route path="menu" element={<AdminMenu />} />
         <Route path="orders" element={<AdminOrders />} />
-        <Route path="invoices" element={<AdminInvoices />} />
+        <Route path="tables" element={<AdminTables />} />
+        <Route path="taxes-charges" element={<AdminTaxesCharges />} />
+        <Route path="invoice-settings" element={<AdminInvoiceSettings />} />
         <Route path="reports" element={<AdminReports />} />
       </Route>
 

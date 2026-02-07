@@ -17,8 +17,10 @@ export default function AdminLayout() {
   const navItems = [
     { label: "Dashboard", to: `/${restaurantId}/admin/dashboard` },
     { label: "Orders", to: `/${restaurantId}/admin/orders` },
+    { label: "Table Management", to: `/${restaurantId}/admin/tables` },
     { label: "Menu Management", to: `/${restaurantId}/admin/menu` },
-    { label: "Invoices", to: `/${restaurantId}/admin/invoices` },
+    { label: "Taxes & Charges", to: `/${restaurantId}/admin/taxes-charges` },
+    { label: "Invoice Settings", to: `/${restaurantId}/admin/invoice-settings` },
     { label: "Reports", to: `/${restaurantId}/admin/reports` },
   ];
 
@@ -43,22 +45,25 @@ export default function AdminLayout() {
           <h1 className="text-xl font-semibold text-slate-800 mt-1">Evergreen Bistro</h1>
           <p className="text-sm text-slate-500 mt-1">ID: {restaurantId}</p>
         </div>
-        <nav className="flex-1 px-4 space-y-1">
-          {navItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              className={({ isActive }) =>
-                `flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-150 ${
-                  isActive
-                    ? "bg-[#2AB0A3]/10 text-[#2AB0A3] border border-[#2AB0A3]/30"
-                    : "text-slate-700 hover:bg-slate-50"
-                }`
-              }
-            >
-              {item.label}
-            </NavLink>
-          ))}
+        <nav className="flex-1 flex flex-col justify-between px-4 pb-6">
+          <div className="flex-1 flex flex-col gap-2 overflow-y-auto">
+            {navItems.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                className={({ isActive }) =>
+                  `flex items-center justify-center w-full h-14 rounded-lg text-base font-semibold transition-colors shadow-sm ${
+                    isActive
+                      ? "bg-[#2AB0A3]/10 text-[#2AB0A3] border-2 border-[#2AB0A3]/30"
+                      : "bg-white text-slate-700 hover:bg-slate-50 border border-slate-200"
+                  }`
+                }
+              >
+                {item.label}
+              </NavLink>
+            ))}
+          </div>
+          {/* Logout button removed as requested */}
         </nav>
         <div className="px-4 pb-6">
           <button
